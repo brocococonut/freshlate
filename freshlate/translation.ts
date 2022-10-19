@@ -52,8 +52,8 @@ export class LanguageService {
     const found =
       this.languages[lang]?.[key] ||
       this.languages[lang]?.[this.fallback_key] ||
-      this.languages?.[this.fallback_language][key] ||
-      this.languages?.[this.fallback_language][this.fallback_key] ||
+      this.languages?.[this.fallback_language]?.[key] ||
+      this.languages?.[this.fallback_language]?.[this.fallback_key] ||
       "__NOT_FOUND__";
 
     // Find anything matching something similar to [[~ {object.nested.key} 1: `string` | 2: `{{object.second.nested.key}} string` | 3: `string` | ... | default: `string` ]]
