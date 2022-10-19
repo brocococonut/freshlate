@@ -12,6 +12,7 @@ export class LanguageService {
   } = {};
   fallback_language = "en";
   fallback_key = "error.unknown";
+  hydrated_languages: string[] = [];
 
   constructor(
     languages: {
@@ -36,16 +37,29 @@ export class LanguageService {
     this.languages[code] = flattenObject(lang);
   }
 
+  hydrateLanguage(code: string, lang: Record<string, unknown>) {
+    this.addLanguage(code, { ...this.languages[code], ...lang });
+    this.setHydrated(code);
+  }
+
+  setHydrated(code: string) {
+    this.hydrated_languages = Array.from(
+      new Set([...this.hydrated_languages, code])
+    );
+  }
+
+  isHydrated(code: string) {
+    return this.hydrated_languages.includes(code);
+  }
+
   isSupported(code: string): boolean {
     return !!this.languages[code];
   }
 
-  t(key: string, opts: Record<string, unknown> = {}) {
-    // Make sure the langauge is supported
-
-    const lang = (opts.lang || this.fallback_language) as string;
+  getKey(lang_code: string, key: string): string {
+    let lang = (lang_code || this.fallback_language) as string;
     if (!this.isSupported(lang)) {
-      opts.lang = this.fallback_language;
+      lang = this.fallback_language;
     }
 
     // Get the value from the language object for further processing
@@ -55,6 +69,13 @@ export class LanguageService {
       this.languages?.[this.fallback_language]?.[key] ||
       this.languages?.[this.fallback_language]?.[this.fallback_key] ||
       "__NOT_FOUND__";
+
+    return found;
+  }
+
+  t(key: string, opts: Record<string, unknown> = {}) {
+    // Make sure the langauge is supported
+    const found = this.getKey((opts.lang || this.fallback_language) as string, key)
 
     // Find anything matching something similar to [[~ {object.nested.key} 1: `string` | 2: `{{object.second.nested.key}} string` | 3: `string` | ... | default: `string` ]]
     // and replace it with the correct string depending on the value of the object.nested.key

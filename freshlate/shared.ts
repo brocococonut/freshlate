@@ -16,11 +16,34 @@ declare module "preact" {
 export interface Options {
   /** The import.meta.url of the module defining these options. */
   selfURL: string;
+  /**
+   * Preallocated languages to use for translations. This is useful if you want
+   * to preallocate languages on the server and then hydrate them on the client.
+   * If this is not provided, the client will try to get the language from the
+   * provided fetch_url.
+   */
   languages: Record<string, Record<string, string>>;
+  /**
+   * Optional location to attempt fetching a translation from
+   * @example https://example.com/translations/{{lang}}.json
+   * @example https://example.com/api/translations/{{lang}}
+   * @example https://example.com/api/translations.json?lang={{lang}}
+   **/
+  fetch_url?: string;
+
+  /**
+   * The fallback language to use if the browser's language is not supported/not set.
+   * If this is not set, the fallback language will be the first language in the
+   * languages object.
+   * @example en
+   * @example en-US
+   * @example fr
+   * @example es
+   */
+  fallback_language?: string;
 }
 
 export function setup(options: Options, language?: string) {
-  // const lang_svc = new LanguageService(options.languages);
   for (const lang in options.languages) {
     if (Object.prototype.hasOwnProperty.call(options.languages, lang)) {
       lang_svc.addLanguage(lang, options.languages[lang]);
@@ -68,9 +91,14 @@ export function setup(options: Options, language?: string) {
       // props.children = `${lang_svc.t(props['data-t-key'], props?.['data-t-key-params'] as Record<string, string>)}`
     }
 
-    // Remove the translation key and params from the element if they exist
-    delete props?.["data-t-key"];
-    delete props?.["data-t-key-params"];
+    if (
+      lang_svc.getKey(language as string, props?.["data-t-key"] as string) !==
+      "__NOT_FOUND__"
+    ) {
+      // Remove the translation key and params from the element if they exist
+      delete props?.["data-t-key"];
+      delete props?.["data-t-key-params"];
+    }
 
     // Call the original hook function if it exists
     originalHook?.(vnode);
