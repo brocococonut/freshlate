@@ -27,21 +27,6 @@ export function setup(options: Options, language?: string) {
     }
   }
 
-  // If no language was passed in, try to get it from the browser
-  if (!language) {
-    // Loop through the languages in the browser and find the first one that
-    // is supported
-    for (let i = 0; i < navigator.languages.length; i++) {
-      const nav_lang = navigator.languages[i];
-      
-      // If the language is supported, set it and break out of the loop
-      if (lang_svc.isSupported(nav_lang)) {
-        language = nav_lang;
-        break;
-      }
-    }
-  }
-
   // Backup the original vnode hook function
   const originalHook = preactOptions.vnode;
 
