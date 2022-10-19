@@ -97,7 +97,7 @@ export class LanguageService {
           /(?<key>[\w.]+):\s*`(?<content>[^`]*)`/gs
         );
 
-        // Log all the options key fields
+        // Build an options map from the regex result iterable
         const options_map = new Map<string, string>();
         for (const option of options) {
           options_map.set(
