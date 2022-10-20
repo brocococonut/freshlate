@@ -3,6 +3,8 @@
 
 A small plugin for Fresh to handle translations. It may be rough around the edges for now, but suits my needs (and hopefully yours) decently enough.
 
+If this helps or if you end up using it, I'd love to hear about it! My twitter is on my github bio. And if you have anything that could contribute to this plugin, open an issue or a pull request, I'll make this guide as complete as possible but can't garuntee it'll explain everything.
+
 
 ## Support
 
@@ -193,6 +195,32 @@ export function Button() {
   );
 }
 ```
+
+### Calling the translate function manually
+If you're opposed to translations happening on the client side at all - you can pre-translate things by omitting any of the above data attributes, and instead just calling the translation service directly.
+Here's an example of how you might call it:
+```ts
+import { freshlate } from 'freshlate'
+
+/*
+ * Example with the following translation object:
+ * {
+ *   "my": {
+ *     "translation": {
+ *       "key": "Here's a translation [[~ {containing.for_data} substituion: `with substitution` | default: `oops` ]]"
+ *     }
+ *   }
+ * }
+*/
+
+freshlate.t('my.translation.key', {
+    my: 'object',
+    containing: {
+        relevant: 'information',
+        for_data: 'substitution
+    }
+) // output: "Here's a translation with substitution"
+```
 ## Authors
 
 - [@brocococonut](https://www.github.com/brocococonut)
@@ -201,4 +229,3 @@ export function Button() {
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
-
