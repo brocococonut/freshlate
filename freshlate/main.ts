@@ -40,14 +40,19 @@ export default async function hydrate(
     language = Object.keys(options.languages)[0];
   }
 
+  // If the options has a fetch_url set, try hydrating the language if necessary
   if (options.fetch_url) {
+    // If the language is not hydrated, fetch it
     if (language && language !== "" && !lang_svc.isHydrated(language)) {
       try {
+        // Fetch the language object, replacing {{lang}} with the given language
         const res = await fetch(
           options.fetch_url.replace("{{lang}}", language)
         );
+        // As we only accept JSON, we can parse it directly
         const data = await res.json();
 
+        // Add the language in to the exisiting keys
         options.languages[language] = {
           ...options.languages[language] || {},
           ...data,
@@ -60,6 +65,8 @@ export default async function hydrate(
       console.log("no language or is hydrated");
     }
 
+    // If there's a fallback language, and if it isn't the language we just hyfrated,
+    // and if it isn't hydrated, fetch it
     if (
       options.fallback_language &&
       options.fallback_language !== language &&
@@ -67,6 +74,7 @@ export default async function hydrate(
     ) {
       const fallback = options.fallback_language;
       try {
+        // Fetch the language object, replacing {{lang}} with the given language just like before
         const res = await fetch(
           options.fetch_url.replace("{{lang}}", fallback)
         );
@@ -83,5 +91,6 @@ export default async function hydrate(
     }
   }
 
+  // Call the setup function with the given options and language
   setup(options, language);
 }

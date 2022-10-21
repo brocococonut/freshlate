@@ -212,7 +212,9 @@ Deno.test(
 );
 
 Deno.test(
-  "Print [fallback_key_missing] if default not found and fallback required",
+  {
+    name: "Print [fallback_key_missing] if default not found and fallback required",
+  },
   () => {
     const svc = new LanguageService();
 
@@ -274,52 +276,107 @@ Deno.test(
       },
     });
 
+    assertEquals(
+      svc.t("common.test", { user: { name: "John Doe", age: 20 } }),
+      "Hello John Doe"
+    );
 
-    assertEquals(svc.t("common.test", { user: { name: "John Doe", age: 20 } }), "Hello John Doe");
-
-    assertEquals(svc.t("common.test", { user: { age: 20 } }), "Hello [john_doe]");
+    assertEquals(
+      svc.t("common.test", { user: { age: 20 } }),
+      "Hello [john_doe]"
+    );
   }
 );
 
-Deno.test("Fallback to default language and default key if key not found on language", () => {
-  const svc = new LanguageService();
+Deno.test(
+  "Fallback to default language and default key if key not found on language",
+  () => {
+    const svc = new LanguageService();
 
-  svc.addLanguage("en", {
-    common: {
-      test: "Hello {{name}}",
-      test2: "Hello {{name}} (test 2 en)",
-      translation_error: "Translation error",
-    },
-    error: {
-      unknown: "Unknown error",
-    },
-  });
+    svc.addLanguage("en", {
+      common: {
+        test: "Hello {{name}}",
+        test2: "Hello {{name}} (test 2 en)",
+        translation_error: "Translation error",
+      },
+      error: {
+        unknown: "Unknown error",
+      },
+    });
 
-  svc.addLanguage("fr", {
-    common: {
-      test: "Bonjour {{name}}",
-    },
-  });
+    svc.addLanguage("fr", {
+      common: {
+        test: "Bonjour {{name}}",
+      },
+    });
 
-  assertEquals(
-    svc.t("common.test", { name: "John Doe", lang: "en" }),
-    "Hello John Doe"
-  );
-  assertEquals(
-    svc.t("common.test", { name: "John Doe", lang: "fr" }),
-    "Bonjour John Doe"
-  );
-  assertEquals(
-    svc.t("common.test", { name: "John Doe", lang: "es" }),
-    "Hello John Doe"
-  );
-  assertEquals(svc.t("common.test", { name: "John Doe" }), "Hello John Doe");
-  assertEquals(
-    svc.t("common.test2", { name: "John Doe", lang: "fr" }),
-    "Hello John Doe (test 2 en)"
-  );
-  assertEquals(
-    svc.t("common.test3", { name: "John Doe", lang: "es" }),
-    "Unknown error"
-  );
-});
+    assertEquals(
+      svc.t("common.test", { name: "John Doe", lang: "en" }),
+      "Hello John Doe"
+    );
+    assertEquals(
+      svc.t("common.test", { name: "John Doe", lang: "fr" }),
+      "Bonjour John Doe"
+    );
+    assertEquals(
+      svc.t("common.test", { name: "John Doe", lang: "es" }),
+      "Hello John Doe"
+    );
+    assertEquals(svc.t("common.test", { name: "John Doe" }), "Hello John Doe");
+    assertEquals(
+      svc.t("common.test2", { name: "John Doe", lang: "fr" }),
+      "Hello John Doe (test 2 en)"
+    );
+    assertEquals(
+      svc.t("common.test3", { name: "John Doe", lang: "es" }),
+      "Unknown error"
+    );
+  }
+);
+
+// A test for when a GT() case is found in a translation
+Deno.test(
+  { name: "Translate a key with added data and nested objects" },
+  () => {
+    const svc = new LanguageService();
+
+    svc.addLanguage("en", {
+      common: {
+        test: "You are [[~ {age} GTE(number:18): `an adult` | default: `a child` ]]",
+      },
+    });
+
+    assertEquals(svc.t("common.test", { age: 18 }), "You are an adult");
+    assertEquals(svc.t("common.test", { age: 17 }), "You are a child");
+  }
+);
+
+Deno.test(
+  { name: "Translate a key and handle function calls in the substitution" },
+  () => {
+    const svc = new LanguageService();
+
+    svc.addLanguage("en", {
+      common: {
+        test_age: "You are [[~ {age} LTE(number:12): `a child` | BT(number:12, number:18): `a teenager` | GTE(number:18): `an adult` ]]",
+        test_array: "You have [[~ {messages.length} EQ(number:0): `no` | LTE(number:3): `some` | LTE(number:8): `a few` | LTE(number:40): `a lot of` | GTE(number:41): `too many` | default: `{{messages.length}}` ]] messages",
+      },
+    });
+
+    const arr = new Array(0);
+
+    assertEquals(svc.t("common.test_age", { age: 18 }), "You are an adult");
+    assertEquals(svc.t("common.test_age", { age: 13 }), "You are a teenager");
+    assertEquals(svc.t("common.test_age", { age: 8 }), "You are a child");
+
+    assertEquals(svc.t("common.test_array", { messages: arr }), "You have no messages");
+    arr.length = 3
+    assertEquals(svc.t("common.test_array", { messages: arr }), "You have some messages");
+    arr.length = 8
+    assertEquals(svc.t("common.test_array", { messages: arr }), "You have a few messages");
+    arr.length = 40
+    assertEquals(svc.t("common.test_array", { messages: arr }), "You have a lot of messages");
+    arr.length = 41
+    assertEquals(svc.t("common.test_array", { messages: arr }), "You have too many messages");
+  }
+);

@@ -13,6 +13,9 @@ declare module "preact" {
   }
 }
 
+/**
+ * Options for the translation service.
+ */
 export interface Options {
   /** The import.meta.url of the module defining these options. */
   selfURL: string;
