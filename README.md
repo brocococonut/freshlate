@@ -3,8 +3,6 @@
 
 A small plugin for Fresh to handle translations. It may be rough around the edges for now, but suits my needs (and hopefully yours) decently enough.
 
-If this helps or if you end up using it, I'd love to hear about it! My twitter is on my github bio. And if you have anything that could contribute to this plugin, open an issue or a pull request, I'll make this guide as complete as possible but can't garuntee it'll explain everything.
-
 
 ## Support
 
@@ -221,6 +219,130 @@ freshlate.t('my.translation.key', {
     }
 ) // output: "Here's a translation with substitution"
 ```
+
+### Function case keys for further filtering
+We'll start off with a direct example from the tests file:
+```ts
+const svc = new LanguageService();
+
+svc.addLanguage("en", {
+  common: {
+    test_age: "You are [[~ {age} LTE(num:12): `a child` | BT(num:12, num:18): `a teenager` | GTE(num:18): `an adult` ]]"
+  },
+});
+
+
+assertEquals(svc.t("common.test_age", { age: 18 }), "You are an adult");
+assertEquals(svc.t("common.test_age", { age: 13 }), "You are a teenager");
+assertEquals(svc.t("common.test_age", { age: 8 }), "You are a child");
+```
+
+Each sequentual assertion would provide the valid answers. The functions get run in sequential order, exiting once one returns true.
+
+There's 17 comparison functions in total, most are just variants of each other though:
+```typescript
+[
+  "GT", "GTE", "NGT", "NGTE", // greater than functions
+  "LT", "LTE", "NLT", "NLTE", // less than functions
+  "EQ", "NEQ",  // equality functions (strict === and !==)
+  "AND", // checking for two boolean values
+  "BT", "NBT", // between two numbers (non-inclusive 15 is not between 10-15)
+  "IN", "NIN", // array functions, checks to see if the current variable is inside a provided options key array
+  "OR", "XOR" // standard or functions (a || b, a !== b)
+]
+```
+So a readout of all of those would be:
+* greater than
+* greater than or equal to
+* not greater than
+* not greater than or equal to
+* less than
+* less than or equal to
+* not less than
+* not less than or equal to
+* equal to (strict)
+* not equal to (strict)
+* and (&&)
+* between (GT(a, b) && LT(a, c))
+* not between
+* in (string or array .includes)
+* not in
+* or (||)
+* xor (a !== b, strict)
+
+The first parameter (which we'll call `a`) is always passed in by the dynamic replacer as the parameter at the start of the statement
+```
+[[~
+    {key.child.child} <---- this
+    ...
+]]
+```
+
+The second parameter (and third if it requires one) are ones passed in by you (`b`, and `c` respectively)
+Each parameter is prefixed by its type to aid the parser. The prefixes available are:
+* num - a simple number type, parsed as either an int or a float depending on if a period is detected. The answer is thrown out if `Number.isNaN` returns true.
+* str - A string
+* bool - a boolean value. this can be written either as: bool:1, or bool:true (and their false counterparts)
+* key - a value that should be fetched from the options object you passed in. This is handled the same way as the afformentioned parameter at the start of the statement
+
+Spacing doesn't matter when writing the function, it can be formatted in a number of ways to help with readability. eg:
+* GT(num:1) `test`
+* GT( num: 1 ) `test`
+* GT(num : 1) `test`
+Or even:
+```
+GT(
+	num: 1
+)
+```
+
+Each function has a list of available types to use for each parameter, these apply to afformentioned parameters `b`, and `c`.
+| fn group           | param: b            | param: c      |
+|--------------------|---------------------|---------------|
+| GT, GTE, NGT, NGTE | num, str, key       | N/A           |
+| LT, LTE, NLT, NLTE | num, str, key       | N/A           |
+| EQ, NEQ            | num, str, key, bool | N/A           |
+| BT, NBT            | num, str, key       | num, str, key |
+| AND, OR, XOR       | num, str, key, bool | N/A           |
+| IN, NIN            | key                 | N/A           |
+
+_You'll have to be careful when passing in user data as the statement starting parameter as this isn't checked like the above._
+
+On top of casting the type before the value, the different types also have their values wrapped differently:
+* strings: ``` str: `test` ``` (backtick wrapped string. you can put anything inside other than backticks)
+* numbers: `num: 1` || `num: 1.1`
+* booleans: `bool: 1` || `bool: 0` || `bool: false` || `bool: true`
+* values of keys: `key: {key1.child_key}`
+
+Parameters should be separated by a comma - but again, spacing doesn't matter here.
+
+An example with two given parameters can be found in the test `Translate a key and handle function calls`. Here's the test separated out from the other one in there though:
+```ts
+Deno.test(
+  { name: "Translate a key and handle function calls" },
+  () => {
+    const svc = new LanguageService();
+
+    svc.addLanguage("en", {
+      common: {
+        test_array: "You have [[~ {messages.length} EQ(num:0): `no` | LTE(num:3): `some` | LTE(num:8): `a few` | LTE(num:40): `a lot of` | GTE(num:41): `too many` | default: `{{messages.length}}` ]] messages",
+      },
+    });
+
+    const arr = new Array(0);
+
+    assertEquals(svc.t("common.test_array", { messages: arr }), "You have no messages");
+    arr.length = 3
+    assertEquals(svc.t("common.test_array", { messages: arr }), "You have some messages");
+    arr.length = 8
+    assertEquals(svc.t("common.test_array", { messages: arr }), "You have a few messages");
+    arr.length = 40
+    assertEquals(svc.t("common.test_array", { messages: arr }), "You have a lot of messages");
+    arr.length = 41
+    assertEquals(svc.t("common.test_array", { messages: arr }), "You have too many messages");
+  }
+);
+```
 ## Authors
 
 - [@brocococonut](https://www.github.com/brocococonut)
@@ -229,3 +351,4 @@ freshlate.t('my.translation.key', {
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
+

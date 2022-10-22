@@ -342,7 +342,7 @@ Deno.test(
 
     svc.addLanguage("en", {
       common: {
-        test: "You are [[~ {age} GTE(number:18): `an adult` | default: `a child` ]]",
+        test: "You are [[~ {age} GTE(num:18): `an adult` | default: `a child` ]]",
       },
     });
 
@@ -352,14 +352,14 @@ Deno.test(
 );
 
 Deno.test(
-  { name: "Translate a key and handle function calls in the substitution" },
+  { name: "Translate a key and handle function calls" },
   () => {
     const svc = new LanguageService();
 
     svc.addLanguage("en", {
       common: {
-        test_age: "You are [[~ {age} LTE(number:12): `a child` | BT(number:12, number:18): `a teenager` | GTE(number:18): `an adult` ]]",
-        test_array: "You have [[~ {messages.length} EQ(number:0): `no` | LTE(number:3): `some` | LTE(number:8): `a few` | LTE(number:40): `a lot of` | GTE(number:41): `too many` | default: `{{messages.length}}` ]] messages",
+        test_age: "You are [[~ {age} LTE(num:12): `a child` | BT(num:12, num:18): `a teenager` | GTE(num:18): `an adult` ]]",
+        test_array: "You have [[~ {messages.length} EQ(num:0): `no` | LTE(num:3): `some` | LTE(num:8): `a few` | LTE(num:40): `a lot of` | GTE(num:41): `too many` | default: `{{messages.length}}` ]] messages",
       },
     });
 

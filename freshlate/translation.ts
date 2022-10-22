@@ -1,9 +1,10 @@
-import { flattenObject, getNestedKeyValue, FUNCS, FUNC_NAMES } from "./util.ts";
+import { flattenObject, getNestedKeyValue } from "./util.ts";
+import { FUNCS, FUNC_NAMES, getFunctionParameters } from "./util/function.ts";
 
 const DYN_STR_REGEX =
-  /\[\[~\s*(?:{(?<data_key>.*?)})\s*(?<cases>(?:\s*(?<case_key>(?:(?:[\w-])|(?:N?GTE?|N?LTE?|N?EQ|AND|N?BT|N?IN|X?OR)\((?:[^)]+)\))+)\s*:\s*`[^`]*`\s*\|*\s*)+)+\]\]/sg;
+  /\[\[~\s*(?:{(?<data_key>.*?)})\s*(?<cases>(?:\s*(?<case_key>(?:(?:[\w-])|(?:N?GTE?|N?LTE?|N?EQ|AND|N?BT|N?IN|X?OR)\((?:[^)]+)\))+)\s*:\s*`[^`]*`\s*\|*\s*)+)+\]\]/gs;
 const DYN_CASEKEY_REGEX =
-  /(?<case_key>(?:(?:[\w-])|(?:N?GTE?|N?LTE?|N?EQ|AND|N?BT|N?IN|X?OR)\((?:[^)]+)\))+)\s*:\s*`(?<content>[^`]*)`/sg;
+  /(?<case_key>(?:(?:[\w-])|(?:N?GTE?|N?LTE?|N?EQ|AND|N?BT|N?IN|X?OR)\((?:[^)]+)\))+)\s*:\s*`(?<content>[^`]*)`/gs;
 /**
  * Function for handling
  */
@@ -13,13 +14,7 @@ const DYN_FUNC_REGEX =
 /**(?:N?GTE?|N?LTE?|N?EQ|AND|N?BT|N?IN|X?OR\((?:[^)]+)\))
  * Regex for inner content replacement
  */
-const DYN_NESTED_REGEX = /\{\{(.*?)\}\}(?:\|\|(.*?)\|\|)?/sg;
-
-/**
- * Regex to get the 1 (or 2) arguments of a function
- */
-const DYN_ARG_REGEX =
-  /(?<arg1>(?:string\s*:\s*\`(?<arg1_val_str>[^`]*)\`)|(?:key\s*:\s*(?:{(?<arg1_val_key>.*?)}))|(?:number\s*:\s*(?<arg1_val_num>[0-9]+(\.[0-9]+)?))|(?:boolean\s*:\s*(?<arg1_val_bool>true|false|1|0)))(?:\s*,\s*(?<arg2>(?:string\s*:\s*\`(?<arg2_val_str>[^`]*)\`)|(?:key\s*:\s*(?:{(?<arg2_val_key>.*?)}))|(?:number\s*:\s*(?<arg2_val_num>[0-9]+(\.[0-9]+)?))|(?:boolean\s*:\s*(?<arg2_val_bool>true|false|1|0))))?/s;
+const DYN_NESTED_REGEX = /\{\{(.*?)\}\}(?:\|\|(.*?)\|\|)?/gs;
 
 /**
  * The main translation/language class. This handles storage of languages,
@@ -173,7 +168,7 @@ export class LanguageService {
         _case_key: string,
         _unk,
         _src_str: string,
-        groups: { data_key: string; case_key: string, cases: string }
+        groups: { data_key: string; case_key: string; cases: string }
       ) => {
         let cur_val = getNestedKeyValue(opts, groups["data_key"]);
 
@@ -184,7 +179,7 @@ export class LanguageService {
         // collect all the options into an array
         // const options = dyn_field.matchAll(DYN_CASEKEY_REGEX);
         const options = groups.cases.matchAll(DYN_CASEKEY_REGEX);
-        
+
         // Build an options map from the regex result iterable
         const options_map = new Map<string, string>();
         for (const option of options) {
@@ -202,145 +197,35 @@ export class LanguageService {
           // If the key matches DYN_FUNC_REGEX, run it and if it returns true, set the value to func_case_val
           if (DYN_FUNC_REGEX.test(key)) {
             // Get the separated function name
-            const func_name = key
-              .substring(0, key.indexOf("("))
-              .toUpperCase() as keyof typeof FUNCS;
+            const func_name = key.substring(0, key.indexOf("(")).toUpperCase();
             // Get the arguments and split them by commas, then trim the whitespace
-            const {
-              arg1,
-              arg1_val_str,
-              arg1_val_key,
-              arg1_val_num,
-              arg1_val_bool,
-              arg2,
-              arg2_val_str,
-              arg2_val_key,
-              arg2_val_num,
-              arg2_val_bool,
-            } = (DYN_ARG_REGEX.exec(key) || { groups: {} }).groups as {
-              arg1?: string;
-              arg1_val_str?: string;
-              arg1_val_key?: string;
-              arg1_val_num?: string;
-              arg1_val_bool?: string;
-              arg2?: string;
-              arg2_val_str?: string;
-              arg2_val_key?: string;
-              arg2_val_num?: string;
-              arg2_val_bool?: string;
-            };
 
             // Make sure the function exists
             if (!FUNC_NAMES.includes(func_name)) {
               return;
             }
 
+            const [arg1_obj, arg2_obj] = getFunctionParameters(key, opts);
+            const arg1 = arg1_obj?.val;
+            const arg2 = arg2_obj?.val;
+            const arg1_type = arg1_obj?.type;
+            const arg2_type = arg2_obj?.type;
+
             // Get the function object to make sure the argument lengths meet the minimum for the function
             const func_obj = FUNCS[func_name as keyof typeof FUNCS];
             if (
-              (func_obj.arg_count === 1 && !arg1) ||
-              (func_obj.arg_count === 2 && !arg2)
+              (func_obj.arg_count === 1 && arg1 === undefined) ||
+              (func_obj.arg_count === 2 && arg2 === undefined)
             ) {
               return;
             }
 
-            let arg1_val: string | number | boolean | undefined = undefined;
-            let arg2_val: string | number | boolean | undefined = undefined;
-            if (arg1?.startsWith("str") && arg1_val_str !== undefined) {
-              arg1_val = arg1_val_str;
-            } else if (arg1?.startsWith("key") && arg1_val_key !== undefined) {
-              arg1_val = getNestedKeyValue(opts, arg1_val_key as string) as
-                | string
-                | number
-                | boolean
-                | undefined;
-            } else if (arg1?.startsWith("num") && arg1_val_num !== undefined) {
-              arg1_val = arg1_val_num.includes(".")
-                ? Number.parseFloat(arg1_val_num as string)
-                : Number.parseInt(arg1_val_num as string);
-              if (Number.isNaN(arg1_val)) {
-                arg1_val = undefined;
-              }
-            } else if (
-              arg1?.startsWith("bool") &&
-              arg1_val_bool !== undefined
-            ) {
-              switch (arg1_val_bool) {
-                case "true":
-                case "1":
-                  arg1_val = true;
-                  break;
-                case "false":
-                case "0":
-                  arg1_val = false;
-                  break;
-                default:
-                  arg1_val = undefined;
-                  break;
-              }
-            }
-
-            // If the function requires a second (really third if you count
-            // the comparison passed in at the beginning of the dynamic
-            // replacer) argument, parse it from the provided ar2 variables
-            // from the regex
-            if (func_obj.arg_count > 1) {
-              if (arg2?.startsWith("str") && arg2_val_str !== undefined) {
-                arg2_val = arg2_val_str;
-              } else if (
-                arg2?.startsWith("key") &&
-                arg2_val_key !== undefined
-              ) {
-                arg2_val = getNestedKeyValue(opts, arg2_val_key as string) as
-                  | string
-                  | number
-                  | boolean
-                  | undefined;
-              } else if (
-                arg2?.startsWith("num") &&
-                arg2_val_num !== undefined
-              ) {
-                arg2_val = arg2_val_num.includes(".")
-                  ? Number.parseFloat(arg2_val_num as string)
-                  : Number.parseInt(arg2_val_num as string);
-                if (Number.isNaN(arg2_val)) {
-                  arg2_val = undefined;
-                }
-              } else if (
-                arg2?.startsWith("bool") &&
-                arg2_val_bool !== undefined
-              ) {
-                switch (arg2_val_bool) {
-                  case "true":
-                  case "1":
-                    arg2_val = true;
-                    break;
-                  case "false":
-                  case "0":
-                    arg2_val = false;
-                    break;
-                  default:
-                    arg2_val = undefined;
-                    break;
-                }
-              }
-            }
-
-            const arg1_valid_types = func_obj.arg_types[0];
-            const arg2_valid_types = func_obj.arg_types[1] || [];
+            // Get the available types for each function variable
+            const [arg1_valid_types, arg2_valid_types = []] =
+              func_obj.arg_types;
 
             // Make sure the type of the above variables match with whats allowed in the func_obj.arg_types array
-            if (
-              !(
-                (arg1?.startsWith("str") &&
-                  arg1_valid_types.includes("string")) ||
-                (arg1?.startsWith("key") && arg1_valid_types.includes("key")) ||
-                (arg1?.startsWith("num") &&
-                  arg1_valid_types.includes("number")) ||
-                (arg1?.startsWith("bool") &&
-                  arg1_valid_types.includes("boolean"))
-              )
-            ) {
+            if (!arg1_type || !arg1_valid_types.includes(arg1_type)) {
               // Exit out early if the type for the second variable is invalid
               return;
             }
@@ -348,25 +233,16 @@ export class LanguageService {
             // Make sure the types of arg 2 are valid as well, or if the function only needs one argument, set it to true
             if (
               func_obj.arg_count !== 1 &&
-              !(
-                (arg2?.startsWith("str") &&
-                  arg2_valid_types.includes("string")) ||
-                (arg2?.startsWith("key") && arg2_valid_types.includes("key")) ||
-                (arg2?.startsWith("num") &&
-                  arg2_valid_types.includes("number")) ||
-                (arg2?.startsWith("bool") &&
-                  arg2_valid_types.includes("boolean"))
-              )
+              (!arg2_type || !arg2_valid_types.includes(arg2_type))
             ) {
               // Exit out early if the type for the second variable is invalid
               return;
             }
-            
 
             // If the types are valid, run the function
             const result = (
               func_obj.func as (a: string, b: string, c: string) => boolean
-            )(cur_val as string, arg1_val as string, arg2_val as string);
+            )(cur_val as string, arg1 as string, arg2 as string);
 
             // If the result is true, set the value of this key to the
             // external func_case_val variable for further use
@@ -385,7 +261,7 @@ export class LanguageService {
         }
 
         // Cast the value to a string in case people are using numbers
-        const val_str = new String(cur_val).toString()
+        const val_str = new String(cur_val).toString();
         // If the current value is not in the options, use the default
         if (options_map.has(val_str as string)) {
           return options_map.get(val_str as string) as string;
