@@ -1,18 +1,6 @@
 import { JSX, options as preactOptions, VNode } from "preact";
 import { lang_svc } from "./translation.ts";
 
-declare module "preact" {
-  namespace JSX {
-    interface DOMAttributes<Target extends EventTarget> {
-      /**
-       * The translation key to use for the element's text content.
-       */
-      "data-t-key"?: string;
-      "data-t-key-params"?: Record<string, string>;
-    }
-  }
-}
-
 /**
  * Options for the translation service.
  */
@@ -84,14 +72,16 @@ export function setup(options: Options, language?: string) {
             return child;
           }
         });
-      } else if (typeof props.children === "string") {
+      } else if (
+        typeof props.children === "string" ||
+        props.children === undefined
+      ) {
         // If the children is a string, translate it
         props.children = lang_svc.t(
           props["data-t-key"] as string,
           translate_props
         );
       }
-      // props.children = `${lang_svc.t(props['data-t-key'], props?.['data-t-key-params'] as Record<string, string>)}`
     }
 
     if (
@@ -99,8 +89,8 @@ export function setup(options: Options, language?: string) {
       "__NOT_FOUND__"
     ) {
       // Remove the translation key and params from the element if they exist
-      delete props?.["data-t-key"];
-      delete props?.["data-t-key-params"];
+      // delete props?.["data-t-key"];
+      // delete props?.["data-t-key-params"];
     }
 
     // Call the original hook function if it exists

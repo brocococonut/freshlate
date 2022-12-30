@@ -1,5 +1,18 @@
+import type { JSX, VNode } from "preact";
 import { Options, setup } from "./shared.ts";
 import { lang_svc } from "./translation.ts";
+
+declare module "preact" {
+  namespace JSX {
+    interface DOMAttributes<Target extends EventTarget> {
+      /**
+       * The translation key to use for the element's text content.
+       */
+      "data-t-key"?: string;
+      "data-t-key-params"?: Record<string, unknown>;
+    }
+  }
+}
 
 export default async function hydrate(
   options: Options,
