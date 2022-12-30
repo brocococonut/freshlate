@@ -3,7 +3,7 @@ import { lang_svc } from "./translation.ts";
 
 export default async function hydrate(
   options: Options,
-  state: Record<string, Record<string, string>>
+  state: Record<string, Record<string, string>>,
 ) {
   options.languages = state;
 
@@ -47,7 +47,7 @@ export default async function hydrate(
       try {
         // Fetch the language object, replacing {{lang}} with the given language
         const res = await fetch(
-          options.fetch_url.replace("{{lang}}", language)
+          options.fetch_url.replace("{{lang}}", language),
         );
         // As we only accept JSON, we can parse it directly
         const data = await res.json();
@@ -76,7 +76,7 @@ export default async function hydrate(
       try {
         // Fetch the language object, replacing {{lang}} with the given language just like before
         const res = await fetch(
-          options.fetch_url.replace("{{lang}}", fallback)
+          options.fetch_url.replace("{{lang}}", fallback),
         );
         const data = await res.json();
 

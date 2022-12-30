@@ -1,5 +1,5 @@
 import { flattenObject, getNestedKeyValue } from "./util.ts";
-import { FUNCS, FUNC_NAMES, getFunctionParameters } from "./util/function.ts";
+import { FUNC_NAMES, FUNCS, getFunctionParameters } from "./util/function.ts";
 
 const DYN_STR_REGEX =
   /\[\[~\s*(?:{(?<data_key>.*?)})\s*(?<cases>(?:\s*(?<case_key>(?:(?:[\w-])|(?:N?GTE?|N?LTE?|N?EQ|AND|N?BT|N?IN|X?OR)\((?:[^)]+)\))+)\s*:\s*`[^`]*`\s*\|*\s*)+)+\]\]/gs;
@@ -11,7 +11,7 @@ const DYN_CASEKEY_REGEX =
 const DYN_FUNC_REGEX =
   /(?<func>N?GTE?|N?LTE?|N?EQ|AND|N?BT|N?IN|X?OR)\((?<args>[^)]+)\)/s;
 
-/**(?:N?GTE?|N?LTE?|N?EQ|AND|N?BT|N?IN|X?OR\((?:[^)]+)\))
+/**
  * Regex for inner content replacement
  */
 const DYN_NESTED_REGEX = /\{\{(.*?)\}\}(?:\|\|(.*?)\|\|)?/gs;
@@ -56,7 +56,7 @@ export class LanguageService {
       [key: string]: Record<string, unknown>;
     } = {},
     fallback_language = "en",
-    fallback_key = "error.unknown"
+    fallback_key = "error.unknown",
   ) {
     for (const key in languages) {
       this.addLanguage(key, languages[key]);
@@ -99,7 +99,7 @@ export class LanguageService {
    */
   setHydrated(code: string) {
     this.hydrated_languages = Array.from(
-      new Set([...this.hydrated_languages, code])
+      new Set([...this.hydrated_languages, code]),
     );
   }
 
@@ -134,8 +134,7 @@ export class LanguageService {
     }
 
     // Get the value from the language object for further processing
-    const found =
-      this.languages[lang]?.[key] ||
+    const found = this.languages[lang]?.[key] ||
       this.languages[lang]?.[this.fallback_key] ||
       this.languages?.[this.fallback_language]?.[key] ||
       this.languages?.[this.fallback_language]?.[this.fallback_key] ||
@@ -154,7 +153,7 @@ export class LanguageService {
     // Make sure the langauge is supported
     const found = this.getKey(
       (opts.lang || this.fallback_language) as string,
-      key
+      key,
     );
 
     // Find anything matching something similar to [[~ {object.nested.key} 1: `string` | 2: `{{object.second.nested.key}} string` | 3: `string` | ... | default: `string` ]]
@@ -168,7 +167,7 @@ export class LanguageService {
         _case_key: string,
         _unk,
         _src_str: string,
-        groups: { data_key: string; case_key: string; cases: string }
+        groups: { data_key: string; case_key: string; cases: string },
       ) => {
         let cur_val = getNestedKeyValue(opts, groups["data_key"]);
 
@@ -185,7 +184,7 @@ export class LanguageService {
         for (const option of options) {
           options_map.set(
             option.groups?.case_key as string,
-            option.groups?.content as string
+            option.groups?.content as string,
           );
         }
 
@@ -270,7 +269,7 @@ export class LanguageService {
         } else {
           return "[fallback_key_missing]";
         }
-      }
+      },
     );
 
     // Proceed to replace any instances of {{object.nested.key}} (optionally formatted with a fallback string as {{}}||fallback string|| )  with their appropriate values
@@ -283,7 +282,7 @@ export class LanguageService {
         }
 
         return val as string;
-      }
+      },
     );
 
     return formatted;

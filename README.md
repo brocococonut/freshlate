@@ -133,20 +133,20 @@ If we put all that together and format it to our liking, we get something like t
 	 default: `oops, no cases matched`
 ]]
 ```
-The above would only look pretty outside of a JSON file though. The return characters are purely decorative outside of the case formats
-The regex that handles the parsing of the above can be found in `/freshlate/translation.ts`
+The above would only look pretty outside of a JSON file though. The return characters are purely decorative outside of the case formats.
+The regex that handles the parsing of the above can be found in `/freshlate/translation.ts`.
 Here's the regex to save you the trouble though:
 ```ts
 const DYN_STR_REGEX =
-  /\[\[~\s*(?:{(.*?)})\s*((?:\s*[\w-]+\s*:\s*`[^`]*`\s*\|*\s*)*\s*(?:default\s*:\s*`[^`]*`\s*){0,1})\]\]/gs;
+  /\[\[~\s*(?:{(?<data_key>.*?)})\s*(?<cases>(?:\s*(?<case_key>(?:(?:[\w-])|(?:N?GTE?|N?LTE?|N?EQ|AND|N?BT|N?IN|X?OR)\((?:[^)]+)\))+)\s*:\s*`[^`]*`\s*\|*\s*)+)+\]\]/gs;
 ```
 
-Here's an example properly showing how this would be used in the real-world
+Here's an example properly showing how this would be used in the real-world:
 ```ts
 // /translate.config.ts
 ...    
         common: {
-            counter: 'You have [[~ {count} 0: `no apples` | 1: `one apple` | default: `{{count}} apples` ]]'
+            counter: 'You have [[~ {count} 0: `no apples` | 1: `one apple` | GTE(25): `so many ({{count}}) apples` default: `{{count}} apples` ]]'
         }
 ...
 // --------------------------- //
@@ -162,6 +162,20 @@ export function Button() {
       Apples {/* This will be replaced by
                  the translation service and
                  should read "You have 10 apples" */}
+    </button>
+  );
+}
+// ------------or------------- //
+export function Button() {
+  return (
+    <button
+      class="px-2 py-1 border(gray-100 2) hover:bg-gray-200"
+      data-t-key="common.counter"
+      data-t-key-params={{count: 27}}
+    >
+      Apples {/* This will be replaced by
+                 the translation service and
+                 should read "You have so many (27) apples" */}
     </button>
   );
 }
@@ -283,7 +297,7 @@ Each parameter is prefixed by its type to aid the parser. The prefixes available
 * num - a simple number type, parsed as either an int or a float depending on if a period is detected. The answer is thrown out if `Number.isNaN` returns true.
 * str - A string
 * bool - a boolean value. this can be written either as: bool:1, or bool:true (and their false counterparts)
-* key - a value that should be fetched from the options object you passed in. This is handled the same way as the afformentioned parameter at the start of the statement
+* key - a value that should be fetched from the options object you passed in. This is handled the same way as the afformentioned parameter `a` at the start of the statement
 
 Spacing doesn't matter when writing the function, it can be formatted in a number of ways to help with readability. eg:
 * GT(num:1) `test`

@@ -1,4 +1,4 @@
-import type { JSX, VNode } from "preact";
+import type {} from "preact";
 import { Plugin } from "$fresh/server.ts";
 
 import { Options, setup } from "./freshlate/shared.ts";
@@ -47,4 +47,4 @@ export default function(state) { hydrate(opts, state); }
   };
 }
 
-export {lang_svc as freshlate} from './freshlate/translation.ts'
+export { lang_svc as freshlate } from "./freshlate/translation.ts";

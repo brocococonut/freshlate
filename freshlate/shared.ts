@@ -19,7 +19,7 @@ export interface Options {
    * @example https://example.com/translations/{{lang}}.json
    * @example https://example.com/api/translations/{{lang}}
    * @example https://example.com/api/translations.json?lang={{lang}}
-   **/
+   */
   fetch_url?: string;
 
   /**
@@ -54,8 +54,8 @@ export function setup(options: Options, language?: string) {
     if (props?.["data-t-key"]) {
       // Get the parameters from the element's data-t-key-params
       // attribute, otherwise use an empty object
-      const translate_props =
-        props["data-t-key-params"] || ({} as Record<string, string>);
+      const translate_props = props["data-t-key-params"] ||
+        ({} as Record<string, string>);
 
       // If a language was passed in, set it as the language to use
       if (language) {
@@ -79,14 +79,14 @@ export function setup(options: Options, language?: string) {
         // If the children is a string, translate it
         props.children = lang_svc.t(
           props["data-t-key"] as string,
-          translate_props
+          translate_props,
         );
       }
     }
 
     if (
       lang_svc.getKey(language as string, props?.["data-t-key"] as string) !==
-      "__NOT_FOUND__"
+        "__NOT_FOUND__"
     ) {
       // Remove the translation key and params from the element if they exist
       // delete props?.["data-t-key"];

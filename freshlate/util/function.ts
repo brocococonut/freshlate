@@ -35,7 +35,7 @@ export interface FUNCSMapType {
     arg_count: number;
     arg_types: [
       ("num" | "str" | "bool" | "key")[],
-      ("num" | "str" | "bool" | "key")[]?
+      ("num" | "str" | "bool" | "key")[]?,
     ];
     // deno-lint-ignore no-explicit-any
     func: (...args: any) => boolean;
@@ -139,7 +139,7 @@ export const FUNC_NAMES = Object.keys(FUNCS);
 
 export const getFunctionParameters = (
   str: string,
-  opts: Record<string, unknown> = {}
+  opts: Record<string, unknown> = {},
 ) => {
   // Execute the regex to get the arguments from the string
   const {

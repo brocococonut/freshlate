@@ -9,7 +9,7 @@
  */
 export const flattenObject = (
   obj: Record<string, unknown>,
-  cur_key = ""
+  cur_key = "",
 ): Record<string, string> => {
   const flattened: Record<string, string> = {};
 
@@ -21,7 +21,7 @@ export const flattenObject = (
     } else if (typeof val === "object") {
       Object.assign(
         flattened,
-        flattenObject(val as Record<string, unknown>, key)
+        flattenObject(val as Record<string, unknown>, key),
       );
     } else {
       flattened[key] = val as string;
@@ -45,20 +45,19 @@ export const flattenObject = (
  */
 export const getNestedKeyValue = (
   obj: Record<string, unknown>,
-  key: string
+  key: string,
 ): unknown | undefined => {
   const keys = key.split(".");
   let cur_obj = obj;
 
   for (let i = 0; i < keys.length; i++) {
-    const cur_key = keys[i]
+    const cur_key = keys[i];
     if (cur_obj[cur_key] === undefined) {
       return undefined;
     } else {
       cur_obj = cur_obj[cur_key] as Record<string, unknown>;
     }
   }
-
 
   return cur_obj;
 };
