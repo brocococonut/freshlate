@@ -7,7 +7,17 @@ export default async function hydrate(
 ) {
   options.languages = state;
 
-  let language = document.body.lang;
+  // First, check html lang=".."
+  // - html lang is a standard feature, also cover the head tag, 
+  //   but is not good for reactive translations
+  let language = document.documentElement.lang;
+
+  // Therefore - we allow overriding by body lang=".."
+  // - Which works, but are not actually supported to 
+  //   change by fresh, yet...
+  if (document.body.lang) {
+    language = document.body.lang;
+  }
 
   // If no language was passed in, try to get it from the browser
   if (!language || language === "") {

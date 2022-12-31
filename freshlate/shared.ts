@@ -62,6 +62,11 @@ export function setup(options: Options, language?: string) {
         translate_props.lang = language;
       }
 
+      // If the vnode has a lang attribute, use that instead
+      if (props?.["lang"]) {
+        translate_props.lang = props?.["lang"];
+      }
+
       // If the key is an array, map over all items and translate them if necessary
       if (Array.isArray(props.children)) {
         // Map over the children and translate them if necessary
