@@ -13,6 +13,7 @@ declare module "preact" {
        */
       "data-t-key"?: string;
       "data-t-key-params"?: Record<string, unknown>;
+      "lang"?: string;
     }
   }
 }
