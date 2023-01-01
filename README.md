@@ -1,3 +1,4 @@
+# Migrated to [LocaleKit Fresh](https://github.com/locale-kit/locale-kit-fresh) for the Fresh i18n/l10n plugin, and [LocaleKit](https://github.com/locale-kit/locale-kit) for the underlying i18n/l10n library if you want to use it somewhere else or implement another wrapper for it
 
 # Freshlate
 
